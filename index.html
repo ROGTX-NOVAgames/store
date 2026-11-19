@@ -1,0 +1,396 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROGTXstore</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #080b14;
+  color: white;
+  font-family: Tahoma, sans-serif;
+}
+
+header {
+  background: #111827;
+  padding: 25px;
+  text-align: center;
+  border-bottom: 2px solid #00e5ff;
+}
+
+header h1 {
+  color: #00e5ff;
+  font-size: 32px;
+  margin: 0;
+}
+
+header p {
+  color: #aaa;
+}
+
+nav {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  padding: 15px;
+  flex-wrap: wrap;
+}
+
+button {
+  background: #00bcd4;
+  color: #001018;
+  border: none;
+  padding: 11px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  background: #00e5ff;
+}
+
+.container {
+  max-width: 1100px;
+  margin: auto;
+  padding: 20px;
+}
+
+.products {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+  gap: 20px;
+}
+
+.product {
+  background: #151d2e;
+  padding: 15px;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid #26364b;
+}
+
+.product img {
+  width: 100%;
+  height: 180px;
+  object-fit: contain;
+  background: #0b1220;
+  border-radius: 8px;
+}
+
+.product h3 {
+  color: #00e5ff;
+}
+
+.panel {
+  display: none;
+  background: #151d2e;
+  padding: 20px;
+  border-radius: 12px;
+  margin-top: 20px;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  background: #080f1c;
+  color: white;
+  border: 1px solid #34445c;
+  border-radius: 7px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.chat-box {
+  height: 230px;
+  overflow-y: auto;
+  background: #080f1c;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.message {
+  padding: 8px;
+  margin: 6px 0;
+  background: #172b40;
+  border-radius: 7px;
+  overflow-wrap: anywhere;
+}
+
+footer {
+  text-align: center;
+  padding: 25px;
+  color: #888;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>ROGTXstore</h1>
+  <p>فروشگاه تخصصی تجهیزات گیمینگ</p>
+</header>
+
+<nav>
+  <button onclick="showHome()">صفحه اصلی</button>
+  <button onclick="showLogin()">مدیریت فروشگاه</button>
+</nav>
+
+<div class="container">
+
+  <section id="home">
+    <h2>محصولات گیمینگ</h2>
+    <div class="products" id="products"></div>
+  </section>
+
+  <section id="login" class="panel">
+    <h2>ورود مدیر</h2>
+    <input id="password" type="password"
+           placeholder="رمز مدیریت">
+    <button onclick="login()">ورود به پنل</button>
+    <p id="loginError"></p>
+  </section>
+
+  <section id="admin" class="panel">
+
+    <h2>پنل مدیریت ROGTXstore</h2>
+
+    <h3>افزودن محصول جدید</h3>
+
+    <input id="productName"
+           placeholder="نام محصول">
+
+    <label>انتخاب عکس محصول:</label>
+    <input id="productImage" type="file"
+           accept="image/*">
+
+    <button onclick="addProduct()">
+      افزودن محصول
+    </button>
+
+    <hr>
+
+    <h3>چت مدیران</h3>
+
+    <div class="chat-box" id="chatBox"></div>
+
+    <input id="adminName"
+           placeholder="نام مدیر">
+
+    <input id="chatInput"
+           placeholder="پیام خود را بنویسید">
+
+    <button onclick="sendMessage()">
+      ارسال پیام
+    </button>
+
+    <hr>
+
+    <button onclick="logout()">
+      خروج از مدیریت
+    </button>
+
+  </section>
+
+</div>
+
+<footer>
+  ROGTXstore © 2026
+</footer>
+
+<script>
+const ADMIN_PASSWORD = "13934TR";
+
+let products =
+  JSON.parse(localStorage.getItem("rog_products")) || [];
+
+let messages =
+  JSON.parse(localStorage.getItem("rog_messages")) || [];
+
+function saveProducts() {
+  localStorage.setItem(
+    "rog_products",
+    JSON.stringify(products)
+  );
+}
+
+function saveMessages() {
+  localStorage.setItem(
+    "rog_messages",
+    JSON.stringify(messages)
+  );
+}
+
+function showHome() {
+  document.getElementById("home").style.display = "block";
+  document.getElementById("login").style.display = "none";
+  document.getElementById("admin").style.display = "none";
+}
+
+function showLogin() {
+  document.getElementById("home").style.display = "none";
+  document.getElementById("login").style.display = "block";
+  document.getElementById("admin").style.display = "none";
+}
+
+function login() {
+  const password =
+    document.getElementById("password").value;
+
+  if (password === ADMIN_PASSWORD) {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("admin").style.display = "block";
+    document.getElementById("home").style.display = "none";
+
+    document.getElementById("loginError").textContent = "";
+
+    renderMessages();
+  } else {
+    document.getElementById("loginError").textContent =
+      "رمز عبور اشتباه است!";
+  }
+}
+
+function logout() {
+  showHome();
+}
+
+function addProduct() {
+  const name =
+    document.getElementById("productName").value.trim();
+
+  const file =
+    document.getElementById("productImage").files[0];
+
+  if (!name || !file) {
+    alert("نام و عکس محصول را وارد کنید.");
+    return;
+  }
+
+  if (!file.type.startsWith("image/")) {
+    alert("لطفاً یک فایل عکس انتخاب کنید.");
+    return;
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    alert("حجم عکس باید کمتر از ۲ مگابایت باشد.");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function(event) {
+    products.push({
+      name: name,
+      image: event.target.result
+    });
+
+    try {
+      saveProducts();
+      renderProducts();
+
+      document.getElementById("productName").value = "";
+      document.getElementById("productImage").value = "";
+
+      alert("محصول با موفقیت اضافه شد!");
+    } catch(error) {
+      products.pop();
+      alert("فضای ذخیره مرورگر کافی نیست.");
+    }
+  };
+
+  reader.readAsDataURL(file);
+}
+
+function renderProducts() {
+  const area = document.getElementById("products");
+  area.innerHTML = "";
+
+  if (products.length === 0) {
+    area.textContent = "هنوز محصولی اضافه نشده است.";
+    return;
+  }
+
+  products.forEach(function(product) {
+    const card = document.createElement("div");
+    card.className = "product";
+
+    const img = document.createElement("img");
+    img.src = product.image;
+    img.alt = product.name;
+
+    const title = document.createElement("h3");
+    title.textContent = product.name;
+
+    card.appendChild(img);
+    card.appendChild(title);
+    area.appendChild(card);
+  });
+}
+
+function sendMessage() {
+  const name =
+    document.getElementById("adminName").value.trim();
+
+  const input =
+    document.getElementById("chatInput");
+
+  const message = input.value.trim();
+
+  if (!name || !message) {
+    alert("نام مدیر و پیام را وارد کنید.");
+    return;
+  }
+
+  messages.push({
+    name: name,
+    text: message,
+    time: new Date().toLocaleTimeString("fa-IR")
+  });
+
+  saveMessages();
+
+  input.value = "";
+  renderMessages();
+}
+
+function renderMessages() {
+  const box = document.getElementById("chatBox");
+  box.innerHTML = "";
+
+  messages.forEach(function(msg) {
+    const item = document.createElement("div");
+    item.className = "message";
+
+    const heading = document.createElement("strong");
+    heading.textContent = msg.name + " - " + msg.time;
+
+    const content = document.createElement("p");
+    content.textContent = msg.text;
+
+    item.appendChild(heading);
+    item.appendChild(content);
+    box.appendChild(item);
+  });
+
+  box.scrollTop = box.scrollHeight;
+}
+
+renderProducts();
+showHome();
+</script>
+
+</body>
+</html>
